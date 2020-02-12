@@ -49,6 +49,7 @@ def validate_kNN(max_k):
 		print(x+1, ":", k_accuracy[x]*100, "%")
 
 
-validate_kNN(20)
+# validate_kNN(20)
 for date in normalised_test_data:
-	print(find_kNN(date, 19))
+	print(find_kNN(date, 59))
+	
