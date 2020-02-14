@@ -45,7 +45,7 @@ class Cluster:
 	def get_cluster_label(self):
 		possible_labels = {}
 		for point in self.points:
-			if point[1] in possible_labels:
+			if point.label in possible_labels:
 				possible_labels[point.label] += 1
 			else:
 				possible_labels[point.label] = 1
@@ -105,19 +105,19 @@ def kMeans(cls):
 		# let's recalculate each centroid based on its assigned points
 		for cluster in cls:
 			cluster.recalculate_centroid()
-	return efficiency(cls)
+	return cls
 
 
 def kmeans_mult(cls, num):
-	return (sorted(list(map(kMeans,[cls]*num))))[0] if num > 0 else math.inf
+	return (sorted(list(map(lambda x: efficiency(kMeans(x)), [cls]*num))))[0] if num > 0 else math.inf
 
 
 def optimal_k(recalculate_num=1):
 	k = 1
-	efficiency_results = [kmeans_mult(init(k),recalculate_num)]
+	efficiency_results = [kmeans_mult(init(k), recalculate_num)]
 	while True:
 		k += 1
-		efficiency_results.append(kmeans_mult(init(k),recalculate_num))
+		efficiency_results.append(kmeans_mult(init(k), recalculate_num))
 		temp = np.diff(efficiency_results, 2)
 		if temp.size > 0 and temp[-1] <= 0:
 			k -= 1
@@ -132,5 +132,5 @@ def init(k):
 
 
 num_cls = 4
-kMeans(init(num_cls))
+print(list(map((lambda cl: cl.get_cluster_label()), kMeans(init(num_cls)))))
 print(optimal_k(10))
