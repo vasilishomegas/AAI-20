@@ -1,11 +1,10 @@
 from scipy.spatial import distance
-import numpy as np
-import functools
 import math
 from statistics import median
 import matplotlib.pyplot as plt
 from import_data import *
 import random
+
 
 # Point class for easier storage and access of the position and label of points
 class Point:
@@ -15,6 +14,7 @@ class Point:
 
 
 points = list(map(lambda x: Point(x[0], x[1]), zip(normalised_data, labels)))  # Global data, used throughout kMeans
+
 
 # Cluster class for kMeans
 class Cluster:
@@ -143,8 +143,8 @@ def optimal_k(recalculate=1,redo=1):
     plt.xlabel("K")
     plt.ylabel("Efficiency (lower = better)")
     for result in results:
-        plt.plot(range(1,len(result[1])+1),result[1]) # plots every efficiency result
-    plt.show() # show all results
+        plt.plot(range(1,len(result[1])+1), result[1])  # plots every efficiency result
+    plt.show()  # show all results
 
     plt.title("All efficiency results")
     plt.xlabel("K")
@@ -153,22 +153,24 @@ def optimal_k(recalculate=1,redo=1):
     for result in results:
         if len(result[2]) > max_length:
             max_length = len(result[2])
-        plt.plot(range(2,len(result[2])+2),result[2])
-    max_length += 2
-    plt.plot(range(0,max_length), [0]*max_length)
+        plt.plot(range(2, len(result[2])+2), result[2])
+    # max_length += 2
+    plt.plot(range(2, max_length+2), [0]*max_length)
     plt.show()
 
     print()
-    return int(median(map(lambda x: x[0], results))) # gets the median of the inner function.
+    return int(median(map(lambda x: x[0], results)))  # gets the median of the inner function.
 
 
 def init(k):
-    #initial function to generate k amount of clusters.
+    # initial function to generate k amount of clusters.
     return list(map((lambda xs: Cluster(xs[1], xs[0])), list(enumerate(get_centroids(k)))))
+
 
 def get_label_closest_cluster(cls,point):
     # gets the label of the point using the provided centroids/clusters. The label of the closest cluster is returned.
     return cls[sorted(list(map((lambda cl: [distance.euclidean(point, cl.centroid), cl.cluster_id]), cls)))[0][1]].get_cluster_label()
+
 
 def check_clustering(cls):
     right = 0
@@ -176,8 +178,9 @@ def check_clustering(cls):
         right += g == v
     return right / len(validation_labels) * 100
 
+
 num_cls = 4
 print(list(map((lambda cl: cl.get_cluster_label()), kMeans(init(num_cls))))) # prints all cluster labels.
 print("K: " + str(optimal_k(3,10))) # finds the optimal k for this dataset and returns it.
 
-#print(check_clustering(kMeans(init(optimal_k(3,10)))))
+# print(check_clustering(kMeans(init(optimal_k(3,10)))))
