@@ -6,7 +6,7 @@ import statistics
 from import_data import *
 import random
 
-
+# Point class for easier storage and acces of the position and label of points
 class Point:
     def __init__(self, pos, label):
         self.pos = pos
@@ -15,7 +15,7 @@ class Point:
 
 points = list(map(lambda x: Point(x[0], x[1]), zip(normalised_data, labels)))  # Global data, used throughout kMeans
 
-
+# Cluster class for kMeans
 class Cluster:
     def __init__(self, centroid, cluster_id):
         self.cluster_id = cluster_id
@@ -41,8 +41,6 @@ class Cluster:
         self.check_centroid_changed()
 
     def clear_points(self):
-        # self.check_points_change()
-        # self.old_points = self.points
         self.points = []
 
     def get_cluster_label(self):
@@ -52,9 +50,11 @@ class Cluster:
                 possible_labels[point.label] += 1
             else:
                 possible_labels[point.label] = 1
+        # returns the label that occurs the most in the points in this cluster.
         return max(possible_labels, key=possible_labels.get) if possible_labels is not {} else "Error: No label for this cluster! Probable cause: No points inside this centroids."
 
     def total_dist_from_points_to_centroid(self):
+        # returns the sum of all the distances the the centroid.
         return sum(list(map((lambda point: distance.euclidean(point.pos, self.centroid)), self.points)))
 
     def calculate_avg_dist_to_centroid(self):
@@ -71,6 +71,7 @@ class Cluster:
 
 
 def efficiency(cls):
+    # returns the sum of the distances from all points to its corresponding clusters
     return sum(list(map((lambda cl: cl.total_dist_from_points_to_centroid()), cls)))
 
 
@@ -97,7 +98,7 @@ def any_cluster_changed(cls):
 def kMeans(cls):
     while any_cluster_changed(cls):
         for cluster in cls:
-            cluster.clear_points()
+            cluster.clear_points() #clear the clusters.
         for point in points:  # go through all points
             # add distance from point to current centroid, and the id of the cluster of that centroid
             distances = sorted(list(map((lambda cl: [distance.euclidean(point.pos, cl.centroid), cl.cluster_id]), cls)))
@@ -108,12 +109,12 @@ def kMeans(cls):
         # so now we have clustered every point around a centroid
         # let's recalculate each centroid based on its assigned points
         for cluster in cls:
-            cluster.recalculate_centroid()
+            cluster.recalculate_centroid() #recalculate the position of the cluster.
     return cls
 
 
 def kmeans_mult(cls, num):
-    # Runs kmeans and recalculates num amount of times using cls as its starting centroids
+    # Runs kmeans and recalculates num amount of times using cls as its starting centroids returns the best efficiency one.
     return (sorted(list(map(lambda x: efficiency(kMeans(x)), [cls] * num))))[0] if num > 0 else math.inf
 
 
@@ -122,29 +123,30 @@ def optimal_k(recalculate=1,redo=1):
     # Recalculate : the amount of times the individual k are calculated. (best performing k is selected)
     # Redo : the amount of times the kMeans algorithm is performed. (median is chosen, then converted to int. Any floats are floored.)
     def inner(recalculate_num):
-        k = 1
-        efficiency_results = [kmeans_mult(init(k), recalculate_num)]
+        k = 1 # Starting k
+        efficiency_results = [kmeans_mult(init(k), recalculate_num)] #efficiency list that contains the best functioning kMeans for each k
         while True:
             k += 1
             efficiency_results.append(kmeans_mult(init(k), recalculate_num))
-            temp = np.diff(efficiency_results, 2)
-            if temp.size > 0 and temp[-1] <= 0:
+            temp = np.diff(efficiency_results, 2) # Calculates the second derivative of the efficiency results
+            if temp.size > 0 and temp[-1] <= 0: #when the second derivative is below 0 the best functioning k is the previous one.
                 k -= 1
                 print(efficiency_results)
                 print(temp)
                 break
         return k
-    return int(statistics.median(map(lambda _: inner(recalculate), list(range(0,redo)))))
+    return int(statistics.median(map(lambda _: inner(recalculate), list(range(0,redo))))) # gets the median of the inner function.
 
 def init(k):
     #initial function to generate k amount of clusters.
     return list(map((lambda xs: Cluster(xs[1], xs[0])), list(enumerate(get_centroids(k)))))
 
 def get_label_closest_cluster(cls,point):
+    # gets the label of the point using the provided centroids/clusters. The label of the closest cluster is returned.
     return cls[sorted(list(map((lambda cl: [distance.euclidean(point, cl.centroid), cl.cluster_id]), cls)))[0][1]].get_cluster_label()
 
 
 num_cls = 4
-print(list(map((lambda cl: cl.get_cluster_label()), kMeans(init(num_cls)))))
-print(optimal_k(3,10))
+print(list(map((lambda cl: cl.get_cluster_label()), kMeans(init(num_cls))))) # prints all cluster labels.
+print(optimal_k(3,10)) # finds the optimal k for this dataset.
 
