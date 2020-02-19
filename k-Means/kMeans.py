@@ -2,11 +2,12 @@ from scipy.spatial import distance
 import numpy as np
 import functools
 import math
-import statistics
+from statistics import median
+import matplotlib.pyplot as plt
 from import_data import *
 import random
 
-# Point class for easier storage and acces of the position and label of points
+# Point class for easier storage and access of the position and label of points
 class Point:
     def __init__(self, pos, label):
         self.pos = pos
@@ -122,20 +123,44 @@ def optimal_k(recalculate=1,redo=1):
     # Gets two values
     # Recalculate : the amount of times the individual k are calculated. (best performing k is selected)
     # Redo : the amount of times the kMeans algorithm is performed. (median is chosen, then converted to int. Any floats are floored.)
-    def inner(recalculate_num):
+    def inner(recalculate_num,cur_iter):
         k = 1 # Starting k
         efficiency_results = [kmeans_mult(init(k), recalculate_num)] #efficiency list that contains the best functioning kMeans for each k
         while True:
             k += 1
             efficiency_results.append(kmeans_mult(init(k), recalculate_num))
-            temp = np.diff(efficiency_results, 2) # Calculates the second derivative of the efficiency results
-            if temp.size > 0 and temp[-1] <= 0: #when the second derivative is below 0 the best functioning k is the previous one.
+            snd_diff = np.diff(efficiency_results, 2) # Calculates the second derivative of the efficiency results
+            if snd_diff.size > 0 and snd_diff[-1] <= 0: #when the second derivative is below 0 the best functioning k is the previous one.
                 k -= 1
-                print(efficiency_results)
-                print(temp)
+                print("[" + str(cur_iter+1) + "/" + str(redo) + "]".format(1,1))
                 break
-        return k
-    return int(statistics.median(map(lambda _: inner(recalculate), list(range(0,redo))))) # gets the median of the inner function.
+        return k, efficiency_results, snd_diff
+
+    print()
+
+    results = list(map(lambda i: inner(recalculate,i), list(range(0,redo)))) #get all results from the inner function and puts them in a list
+    plt.title("All efficiency results")
+    plt.xlabel("K")
+    plt.ylabel("Efficiency (lower = better)")
+    for result in results:
+        plt.plot(range(1,len(result[1])+1),result[1]) # plots every efficiency result
+    plt.show() # show all results
+
+    plt.title("All efficiency results")
+    plt.xlabel("K")
+    plt.ylabel("2nd derivative of efficiency")
+    max_length = 0
+    for result in results:
+        if len(result[2]) > max_length:
+            max_length = len(result[2])
+        plt.plot(range(2,len(result[2])+2),result[2])
+    max_length += 2
+    plt.plot(range(0,max_length), [0]*max_length)
+    plt.show()
+
+    print()
+    return int(median(map(lambda x: x[0], results))) # gets the median of the inner function.
+
 
 def init(k):
     #initial function to generate k amount of clusters.
@@ -145,8 +170,14 @@ def get_label_closest_cluster(cls,point):
     # gets the label of the point using the provided centroids/clusters. The label of the closest cluster is returned.
     return cls[sorted(list(map((lambda cl: [distance.euclidean(point, cl.centroid), cl.cluster_id]), cls)))[0][1]].get_cluster_label()
 
+def check_clustering(cls):
+    right = 0
+    for g,v in zip(list(map(lambda p: get_label_closest_cluster(cls,p), normalised_validation_data)),validation_labels):
+        right += g == v
+    return right / len(validation_labels) * 100
 
 num_cls = 4
 print(list(map((lambda cl: cl.get_cluster_label()), kMeans(init(num_cls))))) # prints all cluster labels.
-print(optimal_k(3,10)) # finds the optimal k for this dataset.
+print("K: " + str(optimal_k(3,10))) # finds the optimal k for this dataset and returns it.
 
+#print(check_clustering(kMeans(init(optimal_k(3,10)))))
