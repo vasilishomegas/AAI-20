@@ -59,13 +59,20 @@ class Neuron:
         return self.delta
 
     def get_weight(self, other):
-        return
+        return self.prev_neurons[other]
+
+    def set_weight(self, weight, other):
+        self.prev_neurons[other] = weight
 
     def calculate_weight(self, learning_rate):
-
-        return
+        # calculate the weight towards each of the next neurons
+        # We need to retrieve the weight from the next neuron, as it's stored with the list of previous neurons
+        # Afterwards, we also need to write it back to the same next neuron
+        for neuron in self.next_neurons:
+            neuron.set_weight(neuron.get_weight() + learning_rate*self.calculate_delta()*self.get_value(), self)
 
     def calculate_bias(self, learning_rate):
+        self.bias += learning_rate*self.delta
         return
 
     def add_prev_neuron(self, neuron):
