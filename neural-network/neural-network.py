@@ -69,12 +69,19 @@ class Neuron:
 
 
 class NeuralNetwork:
-    def __init__(self, network, function, learning_rate):
+    def __init__(self, network, function, learning_rate, fully_connected=True):
 
         self.function = function
         self.learning_rate = learning_rate
-        self.output_neurons = []
-
+        # self.output_neurons = []
+        self.network = []
+        
+        for layer in network:
+            initlayer = []
+            for x in range(layer):
+                initlayer.append(Neuron())
+            self.network.append(initlayer)
+        
         neurons = dict(map(lambda x: (x[0], Neuron()), network))
         for neuron in network:
             if not neuron[1]:
@@ -95,6 +102,7 @@ class NeuralNetwork:
 
 def main():
     network_structure = [(1, [2, 3]), (2, [4]), (3, [4]), (4, [])]
+    l = [1, 2, 1]
     activation_function = math.atanh
 
     nn = NeuralNetwork(network_structure, activation_function, 0.1)
