@@ -49,8 +49,9 @@ class Neuron:
     def calculate_delta(self):
         self.delta = 0
         for neuron in self.next_neurons:
-            neuron.calculate_delta()
-        derivative_sigmoid(self.z)
+            self.delta += neuron.calculate_delta()
+        self.delta *= derivative_sigmoid(self.z)
+        return self.delta
 
     def add_prev_neuron(self, neuron):
         self.prev_neurons.append((neuron, rnd_weight))
