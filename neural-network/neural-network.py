@@ -28,7 +28,7 @@ def derived_tanh(x):
 
 class Neuron:
     def __init__(self, function, derivative_function):
-        self.prev_neurons = []
+        self.prev_neurons = {}
         self.weights = []
         self.next_neurons = []
         self.a = None
@@ -57,7 +57,16 @@ class Neuron:
         return self.delta
 
     def add_prev_neuron(self, neuron):
-        self.prev_neurons.append((neuron, rnd_weight))
+        self.prev_neurons[neuron] = rnd_weight
+
+    def add_next_neuron(self, neuron):
+        self.next_neurons.append(neuron)
+
+    def get_weight(self, neuron):
+        return self.prev_neurons[neuron]
+
+    def set_weight(self, neuron, weight):
+        self.prev_neurons[neuron] = weight
 
     def get_prev_neurons(self):
         return self.prev_neurons
@@ -67,7 +76,7 @@ class Neuron:
 
     def get_value(self): # calculate a
         if self.prev_neurons:
-            self.a = self.function(sum(list(map((lambda x: x[0].get_value() * x[1]), self.prev_neurons))))
+            self.a = self.function(sum(list(map((lambda x: x.get_value() * self.prev_neurons[x]), self.prev_neurons.keys()))))
         return self.a
 
 
@@ -77,21 +86,23 @@ class NeuralNetwork:
         self.learning_rate = learning_rate
         self.output_neurons = []
         self.network = []
-        
-        for layer in network:
-            initlayer = []
-            for x in range(layer):
-                initlayer.append(Neuron())
-            self.network.append(initlayer)
-        
-        neurons = dict(map(lambda x: (x[0], Neuron(function, derivative_function)), network))
-        for neuron in network:
-            if not neuron[1]:
-                self.output_neurons.append(neurons[neuron[0]])
-            else:
-                for connection in neuron[1]:
-                    neurons[connection].add_prev_neuron(neurons[neuron[0]])
-        self.input_neurons = [neuron[1] for neuron in neurons.items() if not neuron[1].get_prev_neurons()]
+        if fully_connected:
+            for layer in network:
+                initlayer = []
+                for x in range(layer):
+                    initlayer.append(Neuron())
+                self.network.append(initlayer)
+        else:
+            neurons = dict(map(lambda x: (x[0], Neuron(function, derivative_function)), network))
+            for neuron in network:
+                if not neuron[1]:
+                    self.output_neurons.append(neurons[neuron[0]])
+                else:
+                    for connection in neuron[1]:
+                        neurons[connection].add_prev_neuron(neurons[neuron[0]]) # backward connections
+                        neurons[neuron[0]].add_next_neuron(neurons[connection]) # forward connections
+
+            self.input_neurons = [neuron[1] for neuron in neurons.items() if not neuron[1].get_prev_neurons()]
 
     def run(self, inputs):
         for neuron, value in zip(self.input_neurons, inputs):
@@ -105,7 +116,7 @@ class NeuralNetwork:
 def main():
     network_structure = [(1, [2, 3]), (2, [4]), (3, [4]), (4, [])]
 
-    nn = NeuralNetwork(network_structure, sigmoid, derivative_sigmoid, 0.1)
+    nn = NeuralNetwork(network_structure, sigmoid, derivative_sigmoid, 0.1, False)
     print(nn.input_neurons)
     print(nn.output_neurons)
     print(nn.run([1]))
