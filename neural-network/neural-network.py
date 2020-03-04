@@ -67,7 +67,7 @@ class Neuron:
 
     def get_value(self): # calculate a
         if self.prev_neurons:
-            self.a = self.function(sum(list(map((lambda x: x[0].get_value(function) * x[1]), self.prev_neurons))))
+            self.a = self.function(sum(list(map((lambda x: x[0].get_value() * x[1]), self.prev_neurons))))
         return self.a
 
 
