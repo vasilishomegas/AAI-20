@@ -1,13 +1,56 @@
 import random
 import math
+from math import e
 
 rnd_weight = random.uniform(-1.0, 1)
+
+
+def sigmoid(x):
+    """Standard sigmoid; since it relies on ** to do computation, it broadcasts on vectors and matrices"""
+    return 1 / (1 + (e**(-x)))
+
+
+def derivative_sigmoid(x):
+    # """Expects input x to be already sigmoid-ed""" NOPE
+    return sigmoid(x) * (1 - sigmoid(x))
+
+
+def tanh(x):
+    """Standard tanh; since it relies on ** and * to do computation, it broadcasts on vectors and matrices"""
+    return (e ** (2*x) - 1) / (e ** (2*x) + 1)
+
+
+def derived_tanh(x):
+    # """Expects input x to already be tanh-ed.""" NOPE
+    return 1 - tanh(x)*tanh(x)
 
 
 class Neuron:
     def __init__(self):
         self.prev_neurons = []
-        self.value = None
+        self.weights = []
+        self.next_neurons = []
+        self.a = None
+        self.delta = None
+        self.z = None
+        self.bias = None
+        self.output_goal = None
+        
+    def calculate_z(self):
+        self.z = 0
+        for x in range(len(self.prev_neurons)):
+            self.z += self.prev_neurons[x].calculate_z * self.weights[x]
+        return self.z
+    
+    def calculate_output_delta(self):
+        self.delta = (self.output_goal-self.a)*derivative_sigmoid(self.z)
+        return self.delta
+    
+    def calculate_delta(self):
+        self.delta = 0
+        for neuron in self.next_neurons:
+            neuron.calculate_delta()
+        derivative_sigmoid(self.z)
 
     def add_prev_neuron(self, neuron):
         self.prev_neurons.append((neuron, rnd_weight))
@@ -16,12 +59,12 @@ class Neuron:
         return self.prev_neurons
 
     def set_value(self, value):
-        self.value = value
+        self.a = value
 
-    def get_value(self, function):
+    def get_value(self, function): # calculate a
         if self.prev_neurons:
-            self.value = function(sum(list(map((lambda x: x[0].get_value(function) * x[1]), self.prev_neurons))))
-        return self.value
+            self.a = function(sum(list(map((lambda x: x[0].get_value(function) * x[1]), self.prev_neurons))))
+        return self.a
 
 
 class NeuralNetwork:
@@ -57,7 +100,6 @@ def main():
     print(nn.input_neurons)
     print(nn.output_neurons)
     print(nn.run([1]))
-
 
 
 if __name__ == '__main__':
