@@ -12,8 +12,8 @@ def sigmoid(x):
 
 def derivative_sigmoid(x):
     # """Expects input x to be already sigmoid-ed""" NOPE
-    return sigmoid(x) * (1 - sigmoid(x))
-
+    x = sigmoid(x)
+    return x * (1 - x)
 
 def tanh(x):
     """Standard tanh; since it relies on ** and * to do computation, it broadcasts on vectors and matrices"""
@@ -22,11 +22,12 @@ def tanh(x):
 
 def derived_tanh(x):
     # """Expects input x to already be tanh-ed.""" NOPE
-    return 1 - tanh(x)*tanh(x)
+    x = tanh(x)
+    return 1 - x*x
 
 
 class Neuron:
-    def __init__(self):
+    def __init__(self, function, derivative_function):
         self.prev_neurons = []
         self.weights = []
         self.next_neurons = []
@@ -35,7 +36,9 @@ class Neuron:
         self.z = None
         self.bias = None
         self.output_goal = None
-        
+        self.function = function
+        self.derivative_function = derivative_function
+
     def calculate_z(self):
         self.z = 0
         for x in range(len(self.prev_neurons)):
@@ -43,14 +46,14 @@ class Neuron:
         return self.z
     
     def calculate_output_delta(self):
-        self.delta = (self.output_goal-self.a)*derivative_sigmoid(self.z)
+        self.delta = (self.output_goal-self.a)*self.derivative_function(self.z)
         return self.delta
     
     def calculate_delta(self):
         self.delta = 0
         for neuron in self.next_neurons:
             self.delta += neuron.calculate_delta()
-        self.delta *= derivative_sigmoid(self.z)
+        self.delta *= self.derivative_function(self.z)
         return self.delta
 
     def add_prev_neuron(self, neuron):
@@ -62,20 +65,19 @@ class Neuron:
     def set_value(self, value):
         self.a = value
 
-    def get_value(self, function): # calculate a
+    def get_value(self): # calculate a
         if self.prev_neurons:
-            self.a = function(sum(list(map((lambda x: x[0].get_value(function) * x[1]), self.prev_neurons))))
+            self.a = self.function(sum(list(map((lambda x: x[0].get_value(function) * x[1]), self.prev_neurons))))
         return self.a
 
 
 class NeuralNetwork:
-    def __init__(self, network, function, learning_rate):
+    def __init__(self, network, function, derivative_function, learning_rate):
 
-        self.function = function
         self.learning_rate = learning_rate
         self.output_neurons = []
 
-        neurons = dict(map(lambda x: (x[0], Neuron()), network))
+        neurons = dict(map(lambda x: (x[0], Neuron(function, derivative_function)), network))
         for neuron in network:
             if not neuron[1]:
                 self.output_neurons.append(neurons[neuron[0]])
@@ -87,7 +89,7 @@ class NeuralNetwork:
     def run(self, inputs):
         for neuron, value in zip(self.input_neurons, inputs):
             neuron.set_value(value)
-        return list(map(lambda n: n.get_value(self.function), self.output_neurons))
+        return list(map(lambda n: n.get_value(), self.output_neurons))
 
     def train(self, inputs, outputs, repeat=1):
         return
@@ -95,9 +97,8 @@ class NeuralNetwork:
 
 def main():
     network_structure = [(1, [2, 3]), (2, [4]), (3, [4]), (4, [])]
-    activation_function = math.atanh
 
-    nn = NeuralNetwork(network_structure, activation_function, 0.1)
+    nn = NeuralNetwork(network_structure, sigmoid, derivative_sigmoid, 0.1)
     print(nn.input_neurons)
     print(nn.output_neurons)
     print(nn.run([1]))
