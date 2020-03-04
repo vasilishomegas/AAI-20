@@ -38,11 +38,13 @@ class Neuron:
         self.output_goal = None
         self.function = function
         self.derivative_function = derivative_function
+        self.state_switcher = False
 
     def calculate_z(self):
-        self.z = 0
-        for x in range(len(self.prev_neurons)):
-            self.z += self.prev_neurons[x].calculate_z * self.weights[x]
+        # self.z = 0
+        # for x in range(len(self.prev_neurons)):
+        #     self.z += self.prev_neurons[x].calculate_z * self.weights[x]
+        self.z = sum(list(map((lambda x: x[0].get_value() * x[1]), self.prev_neurons)))
         return self.z
     
     def calculate_output_delta(self):
@@ -56,6 +58,16 @@ class Neuron:
         self.delta *= self.derivative_function(self.z)
         return self.delta
 
+    def get_weight(self, other):
+        return
+
+    def calculate_weight(self, learning_rate):
+
+        return
+
+    def calculate_bias(self, learning_rate):
+        return
+
     def add_prev_neuron(self, neuron):
         self.prev_neurons.append((neuron, rnd_weight))
 
@@ -65,9 +77,9 @@ class Neuron:
     def set_value(self, value):
         self.a = value
 
-    def get_value(self): # calculate a
-        if self.prev_neurons:
-            self.a = self.function(sum(list(map((lambda x: x[0].get_value() * x[1]), self.prev_neurons))))
+    def get_value(self):  # calculate a
+        if self.prev_neurons:  # if not an input neuron
+            self.a = self.function(self.calculate_z())
         return self.a
 
 
