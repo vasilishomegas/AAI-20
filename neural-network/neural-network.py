@@ -40,6 +40,9 @@ class Neuron:
         self.derivative_function = derivative_function
         self.state_switcher = False
 
+    def set_output_goal(self, target):
+        self.output_goal = target
+
     def calculate_z(self):
         # self.z = 0
         # for x in range(len(self.prev_neurons)):
@@ -81,12 +84,6 @@ class Neuron:
     def add_next_neuron(self, neuron):
         self.next_neurons.append(neuron)
 
-    def get_weight(self, neuron):
-        return self.prev_neurons[neuron]
-
-    def set_weight(self, neuron, weight):
-        self.prev_neurons[neuron] = weight
-
     def get_prev_neurons(self):
         return self.prev_neurons
 
@@ -112,23 +109,30 @@ class NeuralNetwork:
                     initlayer.append(Neuron())
                 self.network.append(initlayer)
         else:
-            neurons = dict(map(lambda x: (x[0], Neuron(function, derivative_function)), network))
+            neurons = dict(map(lambda n: (n[0], Neuron(function, derivative_function)), network))
             for neuron in network:
                 if not neuron[1]:
                     self.output_neurons.append(neurons[neuron[0]])
                 else:
                     for connection in neuron[1]:
-                        neurons[connection].add_prev_neuron(neurons[neuron[0]]) # backward connections
-                        neurons[neuron[0]].add_next_neuron(neurons[connection]) # forward connections
+                        neurons[connection].add_prev_neuron(neurons[neuron[0]])  # backward connections
+                        neurons[neuron[0]].add_next_neuron(neurons[connection])  # forward connections
 
             self.input_neurons = [neuron[1] for neuron in neurons.items() if not neuron[1].get_prev_neurons()]
 
     def run(self, inputs):
         for neuron, value in zip(self.input_neurons, inputs):
             neuron.set_value(value)
-        return list(map(lambda n: n.get_value(), self.output_neurons))
+        return list(map(lambda n: (n, n.get_value()), self.output_neurons))
 
     def train(self, inputs, outputs, repeat=1):
+        for batch_input, batch_output in zip(inputs, outputs):
+            for neuron, target in zip(self.output_neurons, batch_output):
+                neuron.set_output_goal(target)
+            for neuron, input_value in zip(self.input_neurons, batch_input):
+                neuron.set_value(input_value)
+
+
         return
 
 
