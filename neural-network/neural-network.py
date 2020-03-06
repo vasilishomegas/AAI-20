@@ -98,7 +98,7 @@ class Neuron:
 
     def get_value(self):  # calculate a
         if self.prev_neurons and self.state != NeuronState.INIT:  # if not an input neuron
-            self.a = self.function(self.calculate_z())
+            self.a = self.function(self.calculate_z() + self.bias)
             self.state = 0
         return self.a
 
@@ -155,13 +155,13 @@ class NeuralNetwork:
                 for neuron, target in zip(self.output_neurons, batch_output):
                     neuron.set_output_goal(target)
                 self.run(batch_input)
-            neuron_queue = self.input_neurons[:]
-            for neuron in neuron_queue:
-                if neuron.check_state(NeuronState.WEIGHT):
-                    neuron.calculate_weight(self.learning_rate)
-                    neuron.calculate_bias(self.learning_rate)
-                    neuron_queue += neuron.get_next_neurons()
-                    neuron.set_state(NeuronState.WEIGHT)
+                neuron_queue = self.input_neurons[:]
+                for neuron in neuron_queue:
+                    if neuron.check_state(NeuronState.WEIGHT):
+                        neuron.calculate_weight(self.learning_rate)
+                        neuron.calculate_bias(self.learning_rate)
+                        neuron_queue += neuron.get_next_neurons()
+                        neuron.set_state(NeuronState.WEIGHT)
 
 def main():
     network_structure = [(1, [2, 3]), (2, [4]), (3, [4]), (4, [])]
