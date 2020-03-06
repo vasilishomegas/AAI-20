@@ -114,4 +114,4 @@ for date in test_data:
 
 
 neural_network_data = np.genfromtxt("../data/bezdekIris.data", delimiter=",", usecols=[0, 1, 2, 3])
-neural_network_classification = np.genfromtxt("../data/bezdekIris.data", delimiter=",", usecols=[4], converters={4: lambda s: 0 if s == "Iris-setosa" else 1 if s == "Iris-versicolor" else 2 if s == "Iris-virginica" else 3})
+neural_network_classification = np.genfromtxt("../data/bezdekIris.data", delimiter=",", usecols=[4], converters={4: lambda s: 0 if s == b"Iris-setosa" else 1 if s == b"Iris-versicolor" else 2 if s == b"Iris-virginica" else 3})

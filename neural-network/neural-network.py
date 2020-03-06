@@ -43,7 +43,7 @@ class Neuron:
         self.output_goal = None
         self.function = function
         self.derivative_function = derivative_function
-        self.state = None
+        self.state = NeuronState.WEIGHT
 
     def get_next_neurons(self):
         return self.next_neurons
@@ -78,6 +78,7 @@ class Neuron:
         # We need to retrieve the weight from the next neuron, as it's stored with the list of previous neurons
         # Afterwards, we also need to write it back to the same next neuron
         for neuron in self.next_neurons:
+            #print(self.z) # <------------------------
             neuron.set_weight(neuron.get_weight(self) + learning_rate*self.calculate_delta()*self.a, self)
 
     def calculate_bias(self, learning_rate):
@@ -97,9 +98,8 @@ class Neuron:
         self.a = value
 
     def get_value(self):  # calculate a
-        if self.prev_neurons and self.state != NeuronState.INIT:  # if not an input neuron
+        if self.prev_neurons:  # if not an input neuron
             self.a = self.function(self.calculate_z() + self.bias)
-            self.state = 0
         return self.a
 
     def check_state(self, state):
@@ -134,6 +134,7 @@ class NeuralNetwork:
 
         else:
             neurons = dict(map(lambda n: (n[0], Neuron(function, derivative_function)), network))
+            self.temp = neurons
             for neuron in network:
                 if not neuron[1]:
                     self.output_neurons.append(neurons[neuron[0]])
@@ -164,16 +165,20 @@ class NeuralNetwork:
                         neuron.set_state(NeuronState.WEIGHT)
 
 def main():
-    network_structure = [(1, [2, 3]), (2, [4]), (3, [4]), (4, [])]
+    network_structure = [(1, [4, 5, 6]), (2, [4, 5, 6]), (3, [4, 5, 6]), (4, [7, 8, 9]), (5, [7, 8, 9]), (6, [7, 8, 9]), (7, []), (8, []), (9, [])]
 
-    print(neural_network_data)
-    print(neural_network_classification)
+    def convert_classification(i):
+        x = [0, 0, 0]
+        x[i] = 1
+        return x
 
-    nn = NeuralNetwork(network_structure, sigmoid, derivative_sigmoid, 0.1, False)
-    print(nn.input_neurons)
-    print(nn.output_neurons)
-    print(nn.train([[1],[]]))
+    temp = list(map(convert_classification, neural_network_classification))
+    nn = NeuralNetwork(network_structure, sigmoid, derivative_sigmoid, 0.05, False)
+    nn.train(neural_network_data, temp, 100)
 
+    for i in range(len(neural_network_data)):
+        result = nn.run(neural_network_data[i])
+        print(list(map(lambda x: x[1], result)), neural_network_classification[i])
 
 if __name__ == '__main__':
     main()
