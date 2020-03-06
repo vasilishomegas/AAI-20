@@ -1,14 +1,8 @@
 import random
-from enum import Enum
 from math import e
 from import_data import neural_network_classification, neural_network_data
-rnd_weight = random.uniform(-1.0, 1)
 
 
-class NeuronState(Enum):
-    INIT = 0
-    DELTA = 1
-    WEIGHT = 2
 
 def sigmoid(x):
     """Standard sigmoid; since it relies on ** to do computation, it broadcasts on vectors and matrices"""
@@ -39,11 +33,11 @@ class Neuron:
         self.a = None
         self.delta = None
         self.z = None
-        self.bias = rnd_weight
+        self.bias = random.uniform(-1.0, 1)
         self.output_goal = None
         self.function = function
         self.derivative_function = derivative_function
-        self.state = NeuronState.WEIGHT
+        self.state = False
 
     def get_next_neurons(self):
         return self.next_neurons
@@ -51,20 +45,26 @@ class Neuron:
     def set_output_goal(self, target):
         self.output_goal = target
 
-    def calculate_z(self):
+    def calculate_z(self, state):
         # self.z = 0
         # for x in range(len(self.prev_neurons)):
         #     self.z += self.prev_neurons[x].calculate_z * self.weights[x]
-        self.z = sum(map((lambda x: x.get_value() * self.prev_neurons[x]), self.prev_neurons.keys()))
+        self.z = sum(map((lambda x: x.get_value(state) * self.prev_neurons[x]), self.prev_neurons.keys()))
         return self.z
     
-    def calculate_delta(self):
+    def calculate_delta(self, state):
         # firstly checks if delta has already been calculated. if so returns delta immediately else
         # checks if it is an output neuron
         # then calculate the delta of the neuron using the corresponding formula
-        if self.state != NeuronState.DELTA:
-            self.delta = sum(map(Neuron.calculate_delta, self.next_neurons)) * self.derivative_function(self.z) if self.next_neurons else (self.output_goal-self.a)*self.derivative_function(self.z)
-            self.state = NeuronState.DELTA
+        print(self.state)
+        print(self.z)
+        print(self.a)
+        print(self.output_goal)
+        print()
+
+        if self.state != state:
+            self.delta = sum(map(lambda x: x.calculate_delta(state), self.next_neurons)) * self.derivative_function(self.z) if self.next_neurons else (self.output_goal-self.a)*self.derivative_function(self.z)
+            self.state = state
         return self.delta
 
     def get_weight(self, other):
@@ -73,20 +73,20 @@ class Neuron:
     def set_weight(self, weight, other):
         self.prev_neurons[other] = weight
 
-    def calculate_weight(self, learning_rate):
+    def calculate_weight(self, learning_rate, state):
         # calculate the weight towards each of the next neurons
         # We need to retrieve the weight from the next neuron, as it's stored with the list of previous neurons
         # Afterwards, we also need to write it back to the same next neuron
         for neuron in self.next_neurons:
-            #print(self.z) # <------------------------
-            neuron.set_weight(neuron.get_weight(self) + learning_rate*self.calculate_delta()*self.a, self)
+            print(self.calculate_delta(state))
+            neuron.set_weight(neuron.get_weight(self) + learning_rate*self.calculate_delta(state)*self.a, self)
 
     def calculate_bias(self, learning_rate):
         self.bias += learning_rate*self.delta
         return
 
     def add_prev_neuron(self, neuron):
-        self.prev_neurons[neuron] = rnd_weight
+        self.prev_neurons[neuron] = random.uniform(-1.0, 1)
 
     def add_next_neuron(self, neuron):
         self.next_neurons.append(neuron)
@@ -97,16 +97,11 @@ class Neuron:
     def set_value(self, value):
         self.a = value
 
-    def get_value(self):  # calculate a
-        if self.prev_neurons:  # if not an input neuron
-            self.a = self.function(self.calculate_z() + self.bias)
-        return self.a
-
-    def check_state(self, state):
-        return state != self.state
-
-    def set_state(self, state):
+    def get_value(self, state):  # calculate a
+        if self.prev_neurons and self.state != state:  # if not an input neuron
+            self.a = self.function(self.calculate_z(state) + self.bias)
         self.state = state
+        return self.a
 
 
 class NeuralNetwork:
@@ -115,6 +110,7 @@ class NeuralNetwork:
         self.learning_rate = learning_rate
         self.output_neurons = []
         self.network = []
+        self.state = False
         if fully_connected:
             for layer in network:
                 initlayer = []
@@ -148,7 +144,10 @@ class NeuralNetwork:
     def run(self, inputs):
         for neuron, value in zip(self.input_neurons, inputs):
             neuron.set_value(value)
-        return list(map(lambda n: (n, n.get_value()), self.output_neurons))
+        self.state = not self.state
+        print(self.state)
+        print()
+        return list(map(lambda n: (n, n.get_value(self.state)), self.output_neurons))
 
     def train(self, inputs, outputs, repeat=1):
         for _ in range(repeat):
@@ -157,12 +156,15 @@ class NeuralNetwork:
                     neuron.set_output_goal(target)
                 self.run(batch_input)
                 neuron_queue = self.input_neurons[:]
+                neuron_compl = []
+                self.state = not self.state
                 for neuron in neuron_queue:
-                    if neuron.check_state(NeuronState.WEIGHT):
-                        neuron.calculate_weight(self.learning_rate)
-                        neuron.calculate_bias(self.learning_rate)
-                        neuron_queue += neuron.get_next_neurons()
-                        neuron.set_state(NeuronState.WEIGHT)
+                    neuron.calculate_weight(self.learning_rate, self.state)
+                    neuron.calculate_bias(self.learning_rate)
+                    for next_neuron in neuron.get_next_neurons():
+                        if next_neuron not in neuron_compl:
+                            neuron_queue.append(next_neuron)
+                            neuron_compl.append(next_neuron)
 
 def main():
     network_structure = [(1, [4, 5, 6]), (2, [4, 5, 6]), (3, [4, 5, 6]), (4, [7, 8, 9]), (5, [7, 8, 9]), (6, [7, 8, 9]), (7, []), (8, []), (9, [])]
