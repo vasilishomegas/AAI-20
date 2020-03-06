@@ -1,7 +1,7 @@
 import random
 from enum import Enum
 from math import e
-
+from import_data import neural_network_classification, neural_network_data
 rnd_weight = random.uniform(-1.0, 1)
 
 
@@ -55,7 +55,7 @@ class Neuron:
         # self.z = 0
         # for x in range(len(self.prev_neurons)):
         #     self.z += self.prev_neurons[x].calculate_z * self.weights[x]
-        self.z = sum(map((lambda x: x[0].get_value() * x[1]), self.prev_neurons.keys()))
+        self.z = sum(map((lambda x: x.get_value() * self.prev_neurons[x]), self.prev_neurons.keys()))
         return self.z
     
     def calculate_delta(self):
@@ -166,10 +166,13 @@ class NeuralNetwork:
 def main():
     network_structure = [(1, [2, 3]), (2, [4]), (3, [4]), (4, [])]
 
+    print(neural_network_data)
+    print(neural_network_classification)
+
     nn = NeuralNetwork(network_structure, sigmoid, derivative_sigmoid, 0.1, False)
     print(nn.input_neurons)
     print(nn.output_neurons)
-    print(nn.run([1]))
+    print(nn.train([[1],[]]))
 
 
 if __name__ == '__main__':
