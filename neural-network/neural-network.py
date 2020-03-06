@@ -98,7 +98,7 @@ class Neuron:
 
     def get_value(self):  # calculate a
         if self.prev_neurons and self.state != NeuronState.INIT:  # if not an input neuron
-            self.a = self.function(self.calculate_z())
+            self.a = self.function(self.calculate_z() + self.bias)
             self.state = 0
         return self.a
 
