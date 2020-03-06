@@ -34,7 +34,7 @@ def derived_tanh(x):
 class Neuron:
     def __init__(self, function, derivative_function):
         self.prev_neurons = {}
-        self.weights = []
+        # self.weights = []
         self.next_neurons = []
         self.a = None
         self.delta = None
@@ -119,8 +119,19 @@ class NeuralNetwork:
             for layer in network:
                 initlayer = []
                 for x in range(layer):
-                    initlayer.append(Neuron())
+                    initlayer.append(Neuron(function, derivative_function))
                 self.network.append(initlayer)
+            for layer in range(len(self.network)):
+                for neuron in self.network[layer]:
+                    if layer != 0:
+                        # do prev_neurons
+                        for prev_neuron in self.network[layer-1]:
+                            neuron.add_prev_neuron(prev_neuron)
+                    if layer != len(self.network)-1:
+                        # do next_neurons
+                        for next_neuron in self.network[layer+1]:
+                            neuron.add_next_neuron(next_neuron)
+
         else:
             neurons = dict(map(lambda n: (n[0], Neuron(function, derivative_function)), network))
             for neuron in network:
