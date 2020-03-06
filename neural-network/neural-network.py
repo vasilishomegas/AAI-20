@@ -1,9 +1,14 @@
 import random
-import math
+from enum import Enum
 from math import e
 
 rnd_weight = random.uniform(-1.0, 1)
 
+
+class NeuronState(Enum):
+    INIT = 0
+    DELTA = 1
+    WEIGHT = 2
 
 def sigmoid(x):
     """Standard sigmoid; since it relies on ** to do computation, it broadcasts on vectors and matrices"""
@@ -34,15 +39,11 @@ class Neuron:
         self.a = None
         self.delta = None
         self.z = None
-        self.bias = None
+        self.bias = rnd_weight
         self.output_goal = None
         self.function = function
         self.derivative_function = derivative_function
-        self.state = 0
-        # States #
-        # State 0: initial state
-        # State 1: delta has been calculated
-        # State 2, 3: neuron has already been updated
+        self.state = None
 
     def get_next_neurons(self):
         return self.next_neurons
@@ -61,9 +62,9 @@ class Neuron:
         # firstly checks if delta has already been calculated. if so returns delta immediately else
         # checks if it is an output neuron
         # then calculate the delta of the neuron using the corresponding formula
-        if self.state != 1:
+        if self.state != NeuronState.DELTA:
             self.delta = sum(map(Neuron.calculate_delta, self.next_neurons)) * self.derivative_function(self.z) if self.next_neurons else (self.output_goal-self.a)*self.derivative_function(self.z)
-            self.state = 1
+            self.state = NeuronState.DELTA
         return self.delta
 
     def get_weight(self, other):
@@ -77,7 +78,7 @@ class Neuron:
         # We need to retrieve the weight from the next neuron, as it's stored with the list of previous neurons
         # Afterwards, we also need to write it back to the same next neuron
         for neuron in self.next_neurons:
-            neuron.set_weight(neuron.get_weight() + learning_rate*self.calculate_delta()*self.get_value(), self)
+            neuron.set_weight(neuron.get_weight() + learning_rate*self.calculate_delta()*self.a, self)
 
     def calculate_bias(self, learning_rate):
         self.bias += learning_rate*self.delta
@@ -96,12 +97,13 @@ class Neuron:
         self.a = value
 
     def get_value(self):  # calculate a
-        if self.prev_neurons:  # if not an input neuron
+        if self.prev_neurons and self.state != NeuronState.INIT:  # if not an input neuron
             self.a = self.function(self.calculate_z())
+            self.state = 0
         return self.a
 
     def check_state(self, state):
-        return not state == self.state
+        return state != self.state
 
     def set_state(self, state):
         self.state = state
@@ -137,21 +139,18 @@ class NeuralNetwork:
         return list(map(lambda n: (n, n.get_value()), self.output_neurons))
 
     def train(self, inputs, outputs, repeat=1):
-        state = 2
         for _ in range(repeat):
             for batch_input, batch_output in zip(inputs, outputs):
                 for neuron, target in zip(self.output_neurons, batch_output):
                     neuron.set_output_goal(target)
-                for neuron, input_value in zip(self.input_neurons, batch_input):
-                    neuron.set_value(input_value)
+                self.run(batch_input)
             neuron_queue = self.input_neurons[:]
             for neuron in neuron_queue:
-                if neuron.check_state(state):
+                if neuron.check_state(NeuronState.WEIGHT):
                     neuron.calculate_weight(self.learning_rate)
                     neuron.calculate_bias(self.learning_rate)
                     neuron_queue += neuron.get_next_neurons()
-                    neuron.set_state(state)
-            state = 2 if state == 3 else 3
+                    neuron.set_state(NeuronState.WEIGHT)
 
 def main():
     network_structure = [(1, [2, 3]), (2, [4]), (3, [4]), (4, [])]
