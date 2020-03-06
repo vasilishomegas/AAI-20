@@ -78,7 +78,7 @@ class Neuron:
         # We need to retrieve the weight from the next neuron, as it's stored with the list of previous neurons
         # Afterwards, we also need to write it back to the same next neuron
         for neuron in self.next_neurons:
-            neuron.set_weight(neuron.get_weight() + learning_rate*self.calculate_delta()*self.a, self)
+            neuron.set_weight(neuron.get_weight(self) + learning_rate*self.calculate_delta()*self.a, self)
 
     def calculate_bias(self, learning_rate):
         self.bias += learning_rate*self.delta
