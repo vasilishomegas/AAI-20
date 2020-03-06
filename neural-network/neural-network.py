@@ -40,6 +40,9 @@ class Neuron:
         self.derivative_function = derivative_function
         self.state_switcher = False
 
+    def get_next_neurons(self):
+        return self.next_neurons
+
     def set_output_goal(self, target):
         self.output_goal = target
 
@@ -47,18 +50,14 @@ class Neuron:
         # self.z = 0
         # for x in range(len(self.prev_neurons)):
         #     self.z += self.prev_neurons[x].calculate_z * self.weights[x]
-        self.z = sum(list(map((lambda x: x[0].get_value() * x[1]), self.prev_neurons.keys())))
+        self.z = sum(map((lambda x: x[0].get_value() * x[1]), self.prev_neurons.keys()))
         return self.z
     
-    def calculate_output_delta(self):
-        self.delta = (self.output_goal-self.a)*self.derivative_function(self.z)
-        return self.delta
-    
     def calculate_delta(self):
-        self.delta = 0
-        for neuron in self.next_neurons:
-            self.delta += neuron.calculate_delta()
-        self.delta *= self.derivative_function(self.z)
+
+        # checks if it is an output neuron
+        # then calculate the delta of the neuron using the corresponding formula
+        self.delta = sum(map(Neuron.calculate_delta, self.next_neurons)) * self.derivative_function(self.z) if self.next_neurons else (self.output_goal-self.a)*self.derivative_function(self.z)
         return self.delta
 
     def get_weight(self, other):
@@ -126,14 +125,17 @@ class NeuralNetwork:
         return list(map(lambda n: (n, n.get_value()), self.output_neurons))
 
     def train(self, inputs, outputs, repeat=1):
-        for batch_input, batch_output in zip(inputs, outputs):
-            for neuron, target in zip(self.output_neurons, batch_output):
-                neuron.set_output_goal(target)
-            for neuron, input_value in zip(self.input_neurons, batch_input):
-                neuron.set_value(input_value)
-
-
-        return
+        for _ in range(repeat):
+            for batch_input, batch_output in zip(inputs, outputs):
+                for neuron, target in zip(self.output_neurons, batch_output):
+                    neuron.set_output_goal(target)
+                for neuron, input_value in zip(self.input_neurons, batch_input):
+                    neuron.set_value(input_value)
+            neuron_queue = self.input_neurons[:]
+            for neuron in neuron_queue:
+                neuron.calculate_weight(self.learning_rate)
+                neuron.calculate_bias(self.learning_rate)
+                neuron_queue += neuron.get_next_neurons()
 
 
 def main():
