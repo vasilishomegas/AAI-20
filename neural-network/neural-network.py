@@ -38,7 +38,11 @@ class Neuron:
         self.output_goal = None
         self.function = function
         self.derivative_function = derivative_function
-        self.state_switcher = False
+        self.state = 0
+        # States #
+        # State 0: initial state
+        # State 1: delta has been calculated
+        # State 2, 3: neuron has already been updated
 
     def get_next_neurons(self):
         return self.next_neurons
@@ -54,10 +58,12 @@ class Neuron:
         return self.z
     
     def calculate_delta(self):
-
+        # firstly checks if delta has already been calculated. if so returns delta immediately else
         # checks if it is an output neuron
         # then calculate the delta of the neuron using the corresponding formula
-        self.delta = sum(map(Neuron.calculate_delta, self.next_neurons)) * self.derivative_function(self.z) if self.next_neurons else (self.output_goal-self.a)*self.derivative_function(self.z)
+        if self.state != 1:
+            self.delta = sum(map(Neuron.calculate_delta, self.next_neurons)) * self.derivative_function(self.z) if self.next_neurons else (self.output_goal-self.a)*self.derivative_function(self.z)
+            self.state = 1
         return self.delta
 
     def get_weight(self, other):
@@ -94,6 +100,12 @@ class Neuron:
             self.a = self.function(self.calculate_z())
         return self.a
 
+    def check_state(self, state):
+        return not state == self.state
+
+    def set_state(self, state):
+        self.state = state
+
 
 class NeuralNetwork:
     def __init__(self, network, function, derivative_function, learning_rate, fully_connected=True):
@@ -125,6 +137,7 @@ class NeuralNetwork:
         return list(map(lambda n: (n, n.get_value()), self.output_neurons))
 
     def train(self, inputs, outputs, repeat=1):
+        state = 2
         for _ in range(repeat):
             for batch_input, batch_output in zip(inputs, outputs):
                 for neuron, target in zip(self.output_neurons, batch_output):
@@ -133,10 +146,12 @@ class NeuralNetwork:
                     neuron.set_value(input_value)
             neuron_queue = self.input_neurons[:]
             for neuron in neuron_queue:
-                neuron.calculate_weight(self.learning_rate)
-                neuron.calculate_bias(self.learning_rate)
-                neuron_queue += neuron.get_next_neurons()
-
+                if neuron.check_state(state):
+                    neuron.calculate_weight(self.learning_rate)
+                    neuron.calculate_bias(self.learning_rate)
+                    neuron_queue += neuron.get_next_neurons()
+                    neuron.set_state(state)
+            state = 2 if state == 3 else 3
 
 def main():
     network_structure = [(1, [2, 3]), (2, [4]), (3, [4]), (4, [])]
