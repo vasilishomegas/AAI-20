@@ -21,6 +21,7 @@ def tanh(x):
 
 def derived_tanh(x):
     # """Expects input x to already be tanh-ed.""" NOPE
+
     x = tanh(x)
     return 1 - x*x
 
@@ -32,7 +33,7 @@ class Neuron:
         self.next_neurons = []
         self.a = None
         self.delta = None
-        self.z = None
+        self.z = 0
         self.bias = random.uniform(-1.0, 1)
         self.output_goal = None
         self.function = function
@@ -49,18 +50,14 @@ class Neuron:
         # self.z = 0
         # for x in range(len(self.prev_neurons)):
         #     self.z += self.prev_neurons[x].calculate_z * self.weights[x]
-        self.z = sum(map((lambda x: x.get_value(state) * self.prev_neurons[x]), self.prev_neurons.keys()))
+        self.z = self.bias
+        self.z += sum(map((lambda x: x.get_value(state) * self.prev_neurons[x]), self.prev_neurons.keys()))
         return self.z
     
     def calculate_delta(self, state):
         # firstly checks if delta has already been calculated. if so returns delta immediately else
         # checks if it is an output neuron
         # then calculate the delta of the neuron using the corresponding formula
-        print(self.state)
-        print(self.z)
-        print(self.a)
-        print(self.output_goal)
-        print()
 
         if self.state != state:
             self.delta = sum(map(lambda x: x.calculate_delta(state), self.next_neurons)) * self.derivative_function(self.z) if self.next_neurons else (self.output_goal-self.a)*self.derivative_function(self.z)
@@ -78,7 +75,6 @@ class Neuron:
         # We need to retrieve the weight from the next neuron, as it's stored with the list of previous neurons
         # Afterwards, we also need to write it back to the same next neuron
         for neuron in self.next_neurons:
-            print(self.calculate_delta(state))
             neuron.set_weight(neuron.get_weight(self) + learning_rate*self.calculate_delta(state)*self.a, self)
 
     def calculate_bias(self, learning_rate):
@@ -98,8 +94,11 @@ class Neuron:
         self.a = value
 
     def get_value(self, state):  # calculate a
-        if self.prev_neurons and self.state != state:  # if not an input neuron
-            self.a = self.function(self.calculate_z(state) + self.bias)
+        if self.state != state:
+            if self.prev_neurons:  # if not an input neuron
+                self.a = self.function(self.calculate_z(state))
+            else:
+                self.calculate_z(state)
         self.state = state
         return self.a
 
@@ -145,13 +144,14 @@ class NeuralNetwork:
         for neuron, value in zip(self.input_neurons, inputs):
             neuron.set_value(value)
         self.state = not self.state
-        print(self.state)
-        print()
         return list(map(lambda n: (n, n.get_value(self.state)), self.output_neurons))
 
     def train(self, inputs, outputs, repeat=1):
         for _ in range(repeat):
-            for batch_input, batch_output in zip(inputs, outputs):
+            integer_list = list(range(len(inputs)))
+            random.shuffle(integer_list)
+            random_list = list(map(lambda i: (inputs[i], outputs[i]), integer_list))
+            for batch_input, batch_output in random_list:
                 for neuron, target in zip(self.output_neurons, batch_output):
                     neuron.set_output_goal(target)
                 self.run(batch_input)
@@ -167,7 +167,7 @@ class NeuralNetwork:
                             neuron_compl.append(next_neuron)
 
 def main():
-    network_structure = [(1, [4, 5, 6]), (2, [4, 5, 6]), (3, [4, 5, 6]), (4, [7, 8, 9]), (5, [7, 8, 9]), (6, [7, 8, 9]), (7, []), (8, []), (9, [])]
+    network_structure = [(10, [4, 5, 6]), (1, [4, 5, 6]), (2, [4, 5, 6]), (3, [4, 5, 6]), (4, [7, 8, 9]), (5, [7, 8, 9]), (6, [7, 8, 9]), (7, []), (8, []), (9, [])]
 
     def convert_classification(i):
         x = [0, 0, 0]
@@ -176,6 +176,8 @@ def main():
 
     temp = list(map(convert_classification, neural_network_classification))
     nn = NeuralNetwork(network_structure, sigmoid, derivative_sigmoid, 0.05, False)
+
+
     nn.train(neural_network_data, temp, 100)
 
     for i in range(len(neural_network_data)):
