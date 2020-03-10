@@ -51,7 +51,7 @@ class Neuron:
         # for x in range(len(self.prev_neurons)):
         #     self.z += self.prev_neurons[x].calculate_z * self.weights[x]
         self.z = self.bias
-        self.z += sum(map((lambda x: x.get_value(state) * self.prev_neurons[x]), self.prev_neurons.keys()))
+        self.z += sum(map((lambda x: x.get_a(state) * self.prev_neurons[x]), self.prev_neurons.keys()))
         return self.z
     
     def calculate_delta(self, state):
@@ -78,8 +78,8 @@ class Neuron:
             neuron.set_weight(neuron.get_weight(self) + learning_rate*self.calculate_delta(state)*self.a, self)
 
     def calculate_bias(self, learning_rate):
-        self.bias += learning_rate*self.delta
-        return
+        if self.prev_neurons:
+            self.bias += learning_rate*self.delta
 
     def add_prev_neuron(self, neuron):
         self.prev_neurons[neuron] = random.uniform(-1.0, 1)
@@ -90,15 +90,13 @@ class Neuron:
     def get_prev_neurons(self):
         return self.prev_neurons
 
-    def set_value(self, value):
+    def set_a(self, value):
         self.a = value
 
-    def get_value(self, state):  # calculate a
+    def get_a(self, state):  # calculate a
         if self.state != state:
             if self.prev_neurons:  # if not an input neuron
                 self.a = self.function(self.calculate_z(state))
-            else:
-                self.calculate_z(state)
         self.state = state
         return self.a
 
@@ -142,9 +140,9 @@ class NeuralNetwork:
 
     def run(self, inputs):
         for neuron, value in zip(self.input_neurons, inputs):
-            neuron.set_value(value)
+            neuron.set_a(value)
         self.state = not self.state
-        return list(map(lambda n: (n, n.get_value(self.state)), self.output_neurons))
+        return list(map(lambda n: (n, n.get_a(self.state)), self.output_neurons))
 
     def train(self, inputs, outputs, repeat=1):
         for _ in range(repeat):
@@ -175,10 +173,10 @@ def main():
         return x
 
     temp = list(map(convert_classification, neural_network_classification))
-    nn = NeuralNetwork(network_structure, sigmoid, derivative_sigmoid, 0.05, False)
+    nn = NeuralNetwork(network_structure, sigmoid, derivative_sigmoid, 0.01, False)
 
 
-    nn.train(neural_network_data, temp, 100)
+    nn.train(neural_network_data, temp, 10)
 
     for i in range(len(neural_network_data)):
         result = nn.run(neural_network_data[i])
