@@ -14,6 +14,7 @@ def derivative_sigmoid(x):
     x = sigmoid(x)
     return x * (1 - x)
 
+
 def tanh(x):
     """Standard tanh; since it relies on ** and * to do computation, it broadcasts on vectors and matrices"""
     return (e ** (2*x) - 1) / (e ** (2*x) + 1)
@@ -46,20 +47,21 @@ class Neuron:
         self.output_goal = target
 
     def calculate_z(self, state):
-        # self.z = 0
+        # self.z = self.bias
         # for x in range(len(self.prev_neurons)):
         #     self.z += self.prev_neurons[x].calculate_z * self.weights[x]
-        self.z = sum(map((lambda x: x.get_value(state) * self.prev_neurons[x]), self.prev_neurons.keys()))
+        self.z = sum(map((lambda x: x.get_value(state) * self.prev_neurons[x]), self.prev_neurons.keys())) + self.bias
         return self.z
     
     def calculate_delta(self, state):
         # firstly checks if delta has already been calculated. if so returns delta immediately else
         # checks if it is an output neuron
         # then calculate the delta of the neuron using the corresponding formula
-        print(self.state)
-        print(self.z)
-        print(self.a)
-        print(self.output_goal)
+        print("State:", self.state)
+        print("z:", self.z)
+        print("a:", self.a)
+        if not self.next_neurons:
+            print("goal:", self.output_goal)
         print()
 
         if self.state != state:
@@ -78,7 +80,7 @@ class Neuron:
         # We need to retrieve the weight from the next neuron, as it's stored with the list of previous neurons
         # Afterwards, we also need to write it back to the same next neuron
         for neuron in self.next_neurons:
-            print(self.calculate_delta(state))
+            print("Delta:", self.calculate_delta(state))
             neuron.set_weight(neuron.get_weight(self) + learning_rate*self.calculate_delta(state)*self.a, self)
 
     def calculate_bias(self, learning_rate):
@@ -99,7 +101,7 @@ class Neuron:
 
     def get_value(self, state):  # calculate a
         if self.prev_neurons and self.state != state:  # if not an input neuron
-            self.a = self.function(self.calculate_z(state) + self.bias)
+            self.a = self.function(self.calculate_z(state))
         self.state = state
         return self.a
 
@@ -127,6 +129,8 @@ class NeuralNetwork:
                         # do next_neurons
                         for next_neuron in self.network[layer+1]:
                             neuron.add_next_neuron(next_neuron)
+                    if layer == len(self.network)-1:
+                        self.output_neurons.append(neuron)
 
         else:
             neurons = dict(map(lambda n: (n[0], Neuron(function, derivative_function)), network))
@@ -145,14 +149,14 @@ class NeuralNetwork:
         for neuron, value in zip(self.input_neurons, inputs):
             neuron.set_value(value)
         self.state = not self.state
-        print(self.state)
+        print("Run state:", self.state)
         print()
         return list(map(lambda n: (n, n.get_value(self.state)), self.output_neurons))
 
     def train(self, inputs, outputs, repeat=1):
         for _ in range(repeat):
-            for batch_input, batch_output in zip(inputs, outputs):
-                for neuron, target in zip(self.output_neurons, batch_output):
+            for batch_input, batch_output in zip(inputs, outputs):  # match data to expected result
+                for neuron, target in zip(self.output_neurons, batch_output):  # match output neurons to respective output
                     neuron.set_output_goal(target)
                 self.run(batch_input)
                 neuron_queue = self.input_neurons[:]
@@ -174,9 +178,9 @@ def main():
         x[i] = 1
         return x
 
-    temp = list(map(convert_classification, neural_network_classification))
-    nn = NeuralNetwork(network_structure, sigmoid, derivative_sigmoid, 0.05, False)
-    nn.train(neural_network_data, temp, 100)
+    temp = list(map(convert_classification, neural_network_classification))  # turn list of classifications into output array
+    nn = NeuralNetwork(network_structure, sigmoid, derivative_sigmoid, 0.05, False)  # set up network
+    nn.train(neural_network_data, temp, 100)  # data imported from file, expected classifications, nr of runs
 
     for i in range(len(neural_network_data)):
         result = nn.run(neural_network_data[i])
