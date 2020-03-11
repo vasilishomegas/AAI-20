@@ -3,7 +3,6 @@ from math import e
 from import_data import neural_network_classification, neural_network_data
 
 
-
 def sigmoid(x):
     """Standard sigmoid; since it relies on ** to do computation, it broadcasts on vectors and matrices"""
     return 1 / (1 + (e**(-x)))
@@ -22,6 +21,7 @@ def tanh(x):
 
 def derived_tanh(x):
     # """Expects input x to already be tanh-ed.""" NOPE
+
     x = tanh(x)
     return 1 - x*x
 
@@ -33,11 +33,13 @@ class Neuron:
         self.next_neurons = []
         self.a = None
         self.delta = None
-        self.z = None
+        self.z = 0
         self.bias = random.uniform(-1.0, 1)
         self.output_goal = None
         self.function = function
         self.derivative_function = derivative_function
+        self.delta_state = 0
+        self.weight_state = 0
         self.state = False
 
     def get_next_neurons(self):
@@ -47,10 +49,10 @@ class Neuron:
         self.output_goal = target
 
     def calculate_z(self, state):
-        # self.z = self.bias
+        self.z = self.bias
         # for x in range(len(self.prev_neurons)):
         #     self.z += self.prev_neurons[x].calculate_z * self.weights[x]
-        self.z = sum(map((lambda x: x.get_value(state) * self.prev_neurons[x]), self.prev_neurons.keys())) + self.bias
+        self.z += sum(map((lambda x: x.calculate_a(state) * self.prev_neurons[x]), self.prev_neurons.keys()))
         return self.z
     
     def calculate_delta(self, state):
@@ -65,7 +67,10 @@ class Neuron:
         print()
 
         if self.state != state:
-            self.delta = sum(map(lambda x: x.calculate_delta(state), self.next_neurons)) * self.derivative_function(self.z) if self.next_neurons else (self.output_goal-self.a)*self.derivative_function(self.z)
+            self.delta = self.derivative_function(self.z)
+            for neuron in self.next_neurons:
+                self.delta *= neuron.calculate_delta(state)*neuron.get_weight(self)
+            # self.delta = sum(map(lambda x: x.calculate_delta(state), self.next_neurons)) * self.derivative_function(self.z) if self.next_neurons else (self.output_goal-self.a)*self.derivative_function(self.z)
             self.state = state
         return self.delta
 
@@ -79,13 +84,13 @@ class Neuron:
         # calculate the weight towards each of the next neurons
         # We need to retrieve the weight from the next neuron, as it's stored with the list of previous neurons
         # Afterwards, we also need to write it back to the same next neuron
-        for neuron in self.next_neurons:
-            print("Delta:", self.calculate_delta(state))
-            neuron.set_weight(neuron.get_weight(self) + learning_rate*self.calculate_delta(state)*self.a, self)
+        for neuron in self.prev_neurons:
+            # print("Delta:", self.calculate_delta(state))
+            neuron.set_weight(neuron.get_weight(self) + learning_rate*self.calculate_delta(state)*neuron.a, self)
 
     def calculate_bias(self, learning_rate):
-        self.bias += learning_rate*self.delta
-        return
+        if self.prev_neurons:
+            self.bias += learning_rate*self.delta
 
     def add_prev_neuron(self, neuron):
         self.prev_neurons[neuron] = random.uniform(-1.0, 1)
@@ -96,12 +101,12 @@ class Neuron:
     def get_prev_neurons(self):
         return self.prev_neurons
 
-    def set_value(self, value):
+    def set_a(self, value):
         self.a = value
 
-    def get_value(self, state):  # calculate a
-        if self.prev_neurons and self.state != state:  # if not an input neuron
-            self.a = self.function(self.calculate_z(state))
+    def calculate_a(self, state):  # calculate a
+        if self.state != state and self.prev_neurons:  # if not an input neuron
+            self.a = self.function(self.z)
         self.state = state
         return self.a
 
@@ -147,16 +152,19 @@ class NeuralNetwork:
 
     def run(self, inputs):
         for neuron, value in zip(self.input_neurons, inputs):
-            neuron.set_value(value)
+            neuron.set_a(value)
         self.state = not self.state
         print("Run state:", self.state)
         print()
-        return list(map(lambda n: (n, n.get_value(self.state)), self.output_neurons))
+        return list(map(lambda n: (n, n.calculate_a(self.state)), self.output_neurons))
 
     def train(self, inputs, outputs, repeat=1):
         for _ in range(repeat):
-            for batch_input, batch_output in zip(inputs, outputs):  # match data to expected result
-                for neuron, target in zip(self.output_neurons, batch_output):  # match output neurons to respective output
+            integer_list = list(range(len(inputs)))
+            random.shuffle(integer_list)
+            random_list = list(map(lambda i: (inputs[i], outputs[i]), integer_list))
+            for batch_input, batch_output in random_list:
+                for neuron, target in zip(self.output_neurons, batch_output):
                     neuron.set_output_goal(target)
                 self.run(batch_input)
                 neuron_queue = self.input_neurons[:]
@@ -170,8 +178,9 @@ class NeuralNetwork:
                             neuron_queue.append(next_neuron)
                             neuron_compl.append(next_neuron)
 
+
 def main():
-    network_structure = [(1, [4, 5, 6]), (2, [4, 5, 6]), (3, [4, 5, 6]), (4, [7, 8, 9]), (5, [7, 8, 9]), (6, [7, 8, 9]), (7, []), (8, []), (9, [])]
+    network_structure = [(10, [4, 5, 6]), (1, [4, 5, 6]), (2, [4, 5, 6]), (3, [4, 5, 6]), (4, [7, 8, 9]), (5, [7, 8, 9]), (6, [7, 8, 9]), (7, []), (8, []), (9, [])]
 
     def convert_classification(i):
         x = [0, 0, 0]
@@ -180,11 +189,11 @@ def main():
 
     temp = list(map(convert_classification, neural_network_classification))  # turn list of classifications into output array
     nn = NeuralNetwork(network_structure, sigmoid, derivative_sigmoid, 0.05, False)  # set up network
-    nn.train(neural_network_data, temp, 100)  # data imported from file, expected classifications, nr of runs
-
+    nn.train(neural_network_data, temp, 10)  # data imported from file, expected classifications, nr of runs
     for i in range(len(neural_network_data)):
         result = nn.run(neural_network_data[i])
         print(list(map(lambda x: x[1], result)), neural_network_classification[i])
+
 
 if __name__ == '__main__':
     main()
