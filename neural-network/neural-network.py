@@ -60,6 +60,7 @@ class Neuron:
         # checks if it is an output neuron
         # then calculate the delta of the neuron using the corresponding formula
         print("State:", self.state)
+        print("Other State", state)
         print("z:", self.z)
         print("a:", self.a)
         if not self.next_neurons:
@@ -72,6 +73,7 @@ class Neuron:
                 self.delta *= neuron.calculate_delta(state)*neuron.get_weight(self)
             # self.delta = sum(map(lambda x: x.calculate_delta(state), self.next_neurons)) * self.derivative_function(self.z) if self.next_neurons else (self.output_goal-self.a)*self.derivative_function(self.z)
             self.state = state
+        print("Delta: ", self.delta)
         return self.delta
 
     def get_weight(self, other):
@@ -84,9 +86,9 @@ class Neuron:
         # calculate the weight towards each of the next neurons
         # We need to retrieve the weight from the next neuron, as it's stored with the list of previous neurons
         # Afterwards, we also need to write it back to the same next neuron
-        for neuron in self.prev_neurons:
+        for neuron in self.prev_neurons.keys():
             # print("Delta:", self.calculate_delta(state))
-            neuron.set_weight(neuron.get_weight(self) + learning_rate*self.calculate_delta(state)*neuron.a, self)
+            self.prev_neurons[neuron] += learning_rate*self.calculate_delta(state)*neuron.a
 
     def calculate_bias(self, learning_rate):
         if self.prev_neurons:
@@ -106,7 +108,7 @@ class Neuron:
 
     def calculate_a(self, state):  # calculate a
         if self.state != state and self.prev_neurons:  # if not an input neuron
-            self.a = self.function(self.z)
+            self.a = self.function(self.calculate_z(state))
         self.state = state
         return self.a
 
@@ -116,6 +118,7 @@ class NeuralNetwork:
 
         self.learning_rate = learning_rate
         self.output_neurons = []
+        self.input_neurons = []
         self.network = []
         self.state = False
         if fully_connected:
@@ -126,6 +129,8 @@ class NeuralNetwork:
                 self.network.append(initlayer)
             for layer in range(len(self.network)):
                 for neuron in self.network[layer]:
+                    if layer == 0:
+                        self.input_neurons.append(neuron)
                     if layer != 0:
                         # do prev_neurons
                         for prev_neuron in self.network[layer-1]:
@@ -139,7 +144,6 @@ class NeuralNetwork:
 
         else:
             neurons = dict(map(lambda n: (n[0], Neuron(function, derivative_function)), network))
-            self.temp = neurons
             for neuron in network:
                 if not neuron[1]:
                     self.output_neurons.append(neurons[neuron[0]])
@@ -188,8 +192,9 @@ def main():
         return x
 
     temp = list(map(convert_classification, neural_network_classification))  # turn list of classifications into output array
-    nn = NeuralNetwork(network_structure, sigmoid, derivative_sigmoid, 0.05, False)  # set up network
-    nn.train(neural_network_data, temp, 10)  # data imported from file, expected classifications, nr of runs
+    #nn = NeuralNetwork(network_structure, sigmoid, derivative_sigmoid, 0.0001, False)  # set up network
+    nn = NeuralNetwork([4, 5, 5, 5, 3], tanh, derived_tanh, 0.1, True)
+    nn.train(neural_network_data, temp, 30)  # data imported from file, expected classifications, nr of runs
     for i in range(len(neural_network_data)):
         result = nn.run(neural_network_data[i])
         print(list(map(lambda x: x[1], result)), neural_network_classification[i])
