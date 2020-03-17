@@ -69,9 +69,10 @@ class Neuron:
 
         if self.state != state:
             self.delta = self.derivative_function(self.z)
-            for neuron in self.next_neurons:
-                self.delta *= neuron.calculate_delta(state)*neuron.get_weight(self)
-            # self.delta = sum(map(lambda x: x.calculate_delta(state), self.next_neurons)) * self.derivative_function(self.z) if self.next_neurons else (self.output_goal-self.a)*self.derivative_function(self.z)
+
+            # for neuron in self.next_neurons:
+            #     self.delta *= neuron.calculate_delta(state)*neuron.get_weight(self)
+            self.delta = sum(map(lambda x: x.calculate_delta(state), self.next_neurons)) * self.derivative_function(self.z) if self.next_neurons else (self.output_goal-self.a)*self.derivative_function(self.z)
             self.state = state
         print("Delta: ", self.delta)
         return self.delta
