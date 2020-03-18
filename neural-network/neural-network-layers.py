@@ -35,24 +35,6 @@ class Neuron:
         self.function = function
         self.deriv_function = deriv_function
 
-    # def calculate_z(self, prev_neurons):
-    #     self.z = self.bias
-    #     for x in range(len(prev_neurons)):
-    #         self
-    #         self.z += prev_neurons[x].calculate_z * self.weights[x]
-    #
-    # def calculate_a(self):
-    #     if self.prev_neurons:  # if not an input neuron -> probably needs a rework, maybe just don't call this function on an input neuron and check this in network?
-    #         self.a = self.function(self.z)
-    #
-    # def calculate_delta(self):
-    #
-    #
-    # def calculate_bias(self, learning_rate):
-    #     if self.prev_neurons:
-    #         self.bias += learning_rate*self.delta
-
-
 class NeuralNetwork:
     def __init__(self, network, function, derivative_function, learning_rate):
 
@@ -98,14 +80,18 @@ class NeuralNetwork:
             for neuron in layer:
                 self.calculate_z(neuron, prev_layer)
                 self.calculate_a(neuron)
+        return list(map(lambda neuron: neuron.a, self.network[-1]))
 
     def train(self, inputs_list, outputs_list):
-        for inputs, outputs in zip(inputs_list, outputs_list):
+        integer_list = list(range(len(inputs_list)))
+        random.shuffle(integer_list)
+        shuffled_list = list(map(lambda i: (inputs_list[i], outputs_list[i]), integer_list))
+        for inputs, outputs in shuffled_list:
             self.run(inputs)
             for neuron, output in zip(self.network[-1], outputs):
                 # calculate the error of output neurons here
                 self.calculate_output_delta(neuron, output)
-            for layer, next_layer in reversed([zip(self.network[1:-1], self.network[2:])]):
+            for layer, next_layer in reversed(list(zip(self.network[1:-1], self.network[2:]))):
                 for neuron in layer:  # calculate delta
                     self.calculate_delta(neuron, next_layer)
             for prev_layer, layer in zip(self.network[:-1], self.network[1:]):
@@ -114,4 +100,26 @@ class NeuralNetwork:
                         self.calculate_weight((prev_neuron, neuron))
                     self.calculate_bias(neuron)
 
+def main():
 
+    def convert_classification(i):
+        x = [0, 0, 0]
+        x[i] = 1
+        return x
+
+    temp = list(map(convert_classification, neural_network_classification))  # turn list of classifications into output array
+    nn = NeuralNetwork([4, 5, 3], sigmoid, derivative_sigmoid, 0.1)
+    for i in range(120):
+        nn.train(neural_network_data, temp)  # data imported from file, expected classifications, nr of runs
+    num_correct = 0
+    print("Show for every value")
+    for i in range(len(neural_network_data)):
+        result = nn.run(neural_network_data[i])
+        print(result, " ", temp[i])
+        num_correct += 1 if result.index(max(result)) == temp[i].index(max(temp[i])) else 0
+    print()
+    print("Succes rate: ", num_correct / len(neural_network_data) * 100, "%")
+
+
+if __name__ == '__main__':
+    main()
