@@ -26,16 +26,16 @@ def derived_tanh(x):
     return 1 - x*x
 
 
-class Neuron:
-    def __init__(self, function, deriv_function):
-        self.a = None
-        self.delta = None
-        self.z = None
-        self.bias = random.uniform(-1.0, 1)
-        self.function = function
-        self.deriv_function = deriv_function
-
 class NeuralNetwork:
+    class Neuron:  # container class
+        def __init__(self, function, deriv_function):
+            self.a = None
+            self.delta = None
+            self.z = None
+            self.bias = random.uniform(-1.0, 1)
+            self.function = function
+            self.deriv_function = deriv_function
+
     def __init__(self, network, function, derivative_function, learning_rate):
 
         self.learning_rate = learning_rate
@@ -43,14 +43,14 @@ class NeuralNetwork:
         self.weights = {}
 
         for layer in network:  # create neurons in the structure of the network
-            self.network.append([Neuron(function, derivative_function) for _ in range(layer)])
+            self.network.append([self.Neuron(function, derivative_function) for _ in range(layer)])
 
         for prev_layer, layer in zip(self.network[:-1],self.network[1:]):  # connect neurons in layers
             for neuron in layer:
-                for prev_neuron in prev_layer:
+                for prev_neuron in prev_layer:  # connect every neuron in a layer to the neurons in the previous layer
                     self.weights[(prev_neuron, neuron)] = random.uniform(-1.0, 1)
 
-    def calculate_weight(self, connection): # THICC
+    def calculate_weight(self, connection):
         self.weights[connection] += self.learning_rate * connection[1].delta * connection[0].a
 
     def calculate_bias(self, neuron: Neuron):
@@ -74,34 +74,33 @@ class NeuralNetwork:
         neuron.delta = neuron.deriv_function(neuron.z) * deltasum
 
     def run(self, inputs):
-        for input_neuron, value in zip(self.network[0], inputs):
+        for input_neuron, value in zip(self.network[0], inputs):  # set a of input neurons to input values
             input_neuron.a = value
-        for prev_layer, layer in zip(self.network[:-1], self.network[1:]):
+        for prev_layer, layer in zip(self.network[:-1], self.network[1:]):  # calculate a for other layers
             for neuron in layer:
                 self.calculate_z(neuron, prev_layer)
                 self.calculate_a(neuron)
-        return list(map(lambda neuron: neuron.a, self.network[-1]))
+        return list(map(lambda neuron: neuron.a, self.network[-1]))  # return output values
 
     def train(self, inputs_list, outputs_list):
         integer_list = list(range(len(inputs_list)))
-        random.shuffle(integer_list)
+        random.shuffle(integer_list)  # shuffle input data to prevent overtraining a specific result
         shuffled_list = list(map(lambda i: (inputs_list[i], outputs_list[i]), integer_list))
         for inputs, outputs in shuffled_list:
-            self.run(inputs)
-            for neuron, output in zip(self.network[-1], outputs):
-                # calculate the error of output neurons here
+            self.run(inputs)  # calculate network output
+            for neuron, output in zip(self.network[-1], outputs):  # calculate delta of output neurons
                 self.calculate_output_delta(neuron, output)
             for layer, next_layer in reversed(list(zip(self.network[1:-1], self.network[2:]))):
-                for neuron in layer:  # calculate delta
+                for neuron in layer:  # calculate delta for hidden layers
                     self.calculate_delta(neuron, next_layer)
             for prev_layer, layer in zip(self.network[:-1], self.network[1:]):
-                for neuron in layer:  # update weight and biases
+                for neuron in layer:  # update weights and biases
                     for prev_neuron in prev_layer:
                         self.calculate_weight((prev_neuron, neuron))
                     self.calculate_bias(neuron)
 
-def main():
 
+def main():
     def convert_classification(i):
         x = [0, 0, 0]
         x[i] = 1
