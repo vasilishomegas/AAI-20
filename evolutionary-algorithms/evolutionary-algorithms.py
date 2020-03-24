@@ -38,3 +38,16 @@ class Evolutionary_Algortithm:
             map(Genotype.calculate_fitness, self.current_evolution)
         return self.current_evolution
 
+
+def evolution_function_0(evolution, batch_size):
+    evolution.sort(key=Genotype.fitness)
+    survivors = evolution[:int(batch_size*0.2)]
+
+    return
+
+def main():
+    ea = Evolutionary_Algortithm(evolution_function_0)
+    print(ea.evolve())
+
+if __name__ == '__main__':
+    main()
