@@ -39,8 +39,19 @@ class Evolutionary_Algortithm:
         return self.current_evolution
 
 
+def sort_genotypes(genotypes: [Genotype]):
+    result = genotypes[0]
+    for genotype in genotypes[1:]:
+        for i in range(result):
+            if result[i].fitness < genotype.fitness:
+                result = result[:i] + [genotype] + result[i:]
+                break
+            if i == len(result) - 1:
+                result.append(genotype)
+
+
 def evolution_function_0(evolution, batch_size):
-    evolution.sort(key=Genotype.fitness)
+
     survivors = evolution[:int(batch_size*0.2)]
 
     return
