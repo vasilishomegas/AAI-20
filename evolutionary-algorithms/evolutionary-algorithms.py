@@ -39,9 +39,19 @@ class Evolutionary_Algortithm:
         return self.current_evolution
 
 
+def mutate(batch, mutations):
+    for genotype in batch:
+        # randomly move a number from one side to the other
+        for _ in range(mutations):
+            nr = random.randint(0, 10)
+            if nr in batch[0]:
+                batch[0].remove(nr)
+                batch[1].append
+
 def evolution_function_0(evolution, batch_size):
     evolution.sort(key=Genotype.fitness)
     survivors = evolution[:int(batch_size*0.2)]
+
 
     return
 
