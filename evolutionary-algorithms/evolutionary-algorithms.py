@@ -42,6 +42,7 @@ class Genotype:
     def get_bit(self, index):
         return self.bitstring >> index & 1
 
+
 class Evolutionary_Algortithm:
     def __init__(self, evolution_function, batch_size=10):
         self.evolution_function = evolution_function
@@ -77,7 +78,8 @@ def mutate(batch, mutations):
             nr = random.randint(0, 10)
             # isolate a (random) bit, flip it and put it back in place
             # not 100% tested
-            genotype.bitstring |= (1 ^ ((genotype.bitstring >> nr) & 1)) << nr
+            genotype.set_bit(nr, (1 ^ genotype.get_bit(nr)))
+            # genotype.bitstring |= (1 ^ ((genotype.bitstring >> nr) & 1)) << nr
 
 
 def crossover(batch, mutations=1, survivor_rate=0.2):
