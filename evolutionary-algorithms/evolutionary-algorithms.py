@@ -62,7 +62,9 @@ def mutate(batch, mutations):
         # randomly move a number from one side to the other
         for _ in range(mutations):
             nr = random.randint(0, 10)
-            genotype.bitstring &= (1 ^ ((genotype.bitstring >> nr) & 1)) << nr
+            # isolate a (random) bit, flip it and put it back in place
+            # not 100% tested
+            genotype.bitstring |= (1 ^ ((genotype.bitstring >> nr) & 1)) << nr
 
 
 def crossover(batch, mutations, survivor_rate=0.2):
@@ -74,7 +76,8 @@ def crossover(batch, mutations, survivor_rate=0.2):
         other_genotype = current_batch[random.randint(0, len(current_batch))]
         for _ in range(mutations):
             i = random.randint(1, 10)
-            genotype.set_bit(i, other_genotype.get_bit(i))
+            genotype.bitstring |= (1 ^ ((other_genotype.bitstring >> i) & 1)) << i
+
 
 def sort_genotypes(genotypes: [Genotype]):
     result = genotypes[0]
