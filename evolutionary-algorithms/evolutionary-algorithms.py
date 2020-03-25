@@ -32,6 +32,11 @@ class Genotype:
                 sum36 += (bitmask + 1)
         self.fitness = fitness_function(sum36, mul360)
 
+    def set_bit(self, pos, value):
+        pass
+
+    def get_bit(self, pos):
+        pass
 
 class Evolutionary_Algortithm:
     def __init__(self, evolution_function, batch_size=10):
@@ -59,6 +64,17 @@ def mutate(batch, mutations):
             nr = random.randint(0, 10)
             genotype.bitstring &= (1 ^ ((genotype.bitstring >> nr) & 1)) << nr
 
+
+def crossover(batch, mutations, survivor_rate=0.2):
+    new_batch = []
+    current_batch = batch[:int(len(batch)*survivor_rate)]
+    while len(new_batch) < len(batch):
+
+        genotype = current_batch[random.randint(0, len(current_batch))]
+        other_genotype = current_batch[random.randint(0, len(current_batch))]
+        for _ in range(mutations):
+            i = random.randint(1, 10)
+            genotype.set_bit(i, other_genotype.get_bit(i))
 
 def sort_genotypes(genotypes: [Genotype]):
     result = genotypes[0]
