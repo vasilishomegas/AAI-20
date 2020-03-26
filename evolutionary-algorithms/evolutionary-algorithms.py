@@ -49,7 +49,7 @@ class Evolutionary_Algortithm:
         self.current_evolution = []
         for _ in range(batch_size):
             genotype = Genotype()
-            genotype.bitstring = random.randint(0, 1111111111)
+            genotype.bitstring = random.randint(0, 0b1111111111)
             self.current_evolution.append(genotype)
         for genotype in self.current_evolution:
             genotype.calculate_fitness()
@@ -95,7 +95,6 @@ def crossover(batch, mutations):
             genotype.set_bit(i, other_genotype.get_bit(i))
 
     return batch
-
 
 def sort_genotypes(genotypes: [Genotype]):
     result = [genotypes[0]]
