@@ -22,15 +22,13 @@ class Genotype:
         self.fitness = None
 
     def calculate_fitness(self):
-        bitmask = 0
         sum36 = 0
         mul360 = 1
-        for i in range(self.bitstring.bit_length()):
-            cur_val = (self.bitstring >> bitmask) & 1
-            if cur_val:
-                mul360 *= (bitmask + 1)
+        for i in range(10):
+            if (self.bitstring >> i) & 1:
+                mul360 *= i
             else:
-                sum36 += (bitmask + 1)
+                sum36 += i
         self.fitness = fitness_function(sum36, mul360)
 
     def set_bit(self, index, value):
@@ -51,8 +49,7 @@ class Evolutionary_Algortithm:
         self.current_evolution = []
         for _ in range(batch_size):
             genotype = Genotype()
-            for i in range(10):
-                genotype.bitstring |= (random.randint(0, 1) << i)
+            genotype.bitstring = random.randint(0, 1111111111)
             self.current_evolution.append(genotype)
         for genotype in self.current_evolution:
             genotype.calculate_fitness()
@@ -89,17 +86,15 @@ def mutate(batch, mutations):
 
 
 def crossover(batch, mutations):
+    # oneway crossover function
     for _ in range(len(batch)):
         genotype = batch[random.randint(0, len(batch) - 1)]
         other_genotype = batch[random.randint(0, len(batch) - 1)]
         for _ in range(mutations):
             i = random.randint(0, 10)
             genotype.set_bit(i, other_genotype.get_bit(i))
-            other_genotype.set_bit(i, genotype.get_bit(i))
 
     return batch
-
-
 
 
 def sort_genotypes(genotypes: [Genotype]):
@@ -117,15 +112,9 @@ def sort_genotypes(genotypes: [Genotype]):
     return result
 
 
-def evolution_function_0(evolution, batch_size):
-
-    survivors = evolution[:int(batch_size*0.2)]
-
-
-    return
-
 def main():
-    ea = Evolutionary_Algortithm(mutate, 400)
+
+    ea = Evolutionary_Algortithm(mutate, 10)
     print(ea.evolve(100)[0].fitness)
 
 
