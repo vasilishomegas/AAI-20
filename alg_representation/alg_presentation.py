@@ -15,8 +15,8 @@ def preprocess_data(data):
 class TF_NN:
     def __init__(self, input_shape=(28, 28), activation='relu'):
         self.dataset = keras.datasets.mnist
-        (self.train_images, self.train_labels), (self.test_images, self.test_labels) = self.dataset.load_data()
-
+        (self.train_images, self.train_labels), (self.validation_images, self.validation_labels) = self.dataset.load_data()
+        print(len(self.train_labels))
         self.model = keras.Sequential([
             keras.layers.Flatten(input_shape=input_shape),
             keras.layers.Dense(128, activation=activation),
@@ -28,6 +28,11 @@ class TF_NN:
                            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                            metrics=['accuracy'])
 
+def main():
+    tf_nn = TF_NN()
 
-print(tf.__version__)
+
+if __name__ == '__main__':
+    main()
+
 
